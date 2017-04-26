@@ -1,10 +1,31 @@
-global start
-extern long_mode_start
+MAGIC equ 0xe85250d6
+ARCH equ 0
+LEN equ header_end - header_start
+CHECKSUM equ 0x100000000 - (MAGIC + ARCH + LEN)
+TYPE equ 0
+FLAGS equ 0
+SIZE equ 8
+
+section .header
+header_start:
+        dd MAGIC
+        dd ARCH
+        dd LEN
+        dd CHECKSUM
+        dw TYPE
+        dw FLAGS
+        dd SIZE
+header_end:
 
 section .text
+
 bits 32
+
+global start
 start:
         mov esp, stack_top
+        ; Move multiboot info pointer to edi.
+        mov edi, ebx
         call check_multiboot
         call check_cpuid
         call check_long_mode
@@ -12,7 +33,7 @@ start:
         call enable_paging
         ; Load the 64-bit GDT
         lgdt [gdt64.pointer]
-        jmp gdt64.code:long_mode_start
+        jmp gdt64.code:start64
 
 ; Prints `ERR: ` and the given error code to screen and hangs.
 ;
@@ -28,9 +49,8 @@ error:
 
 ; Throw error 0 if eax doesn't contain the Multiboot 2 magic value
 ; (0x36d76289).
-multiboot_magic equ 0x36d76289
 check_multiboot:
-        cmp eax, multiboot_magic
+        cmp eax, 0x36d76289
         jne .no_multiboot
         ret
 .no_multiboot:
@@ -131,6 +151,21 @@ enable_paging:
         mov cr0, eax
         ret
 
+bits 64
+
+start64:
+        ; Load 0 into all data segment registers.
+        mov ax, 0
+        mov ss, ax
+        mov ds, ax
+        mov es, ax
+        mov fs, ax
+        mov gs, ax
+        ; Print 'OKAY' to screen.
+        mov rax, 0x2f592f412f4b2f4f
+        mov qword [0xb8000], rax
+        hlt
+
 section .bss
 align 4096
 p4_table:
@@ -140,7 +175,7 @@ p3_table:
 p2_table:
         resb 4096
 stack_bottom:
-        resb 64
+        resb 4096
 stack_top:
 
 section .rodata
