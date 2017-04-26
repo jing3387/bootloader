@@ -1,33 +1,55 @@
-ARCH ?= x86_64
+ARCH = x86_64
 
-kernel := build/kernel-$(ARCH).bin
-iso := build/schminke-$(ARCH).iso
-linker_script := src/arch/$(ARCH)/linker.ld
-grub_cfg := src/arch/$(ARCH)/grub.cfg
-assembly_source_files := $(wildcard src/arch/$(ARCH)/*.asm)
-assembly_object_files := $(patsubst src/arch/$(ARCH)/%.asm, \
-	build/arch/$(ARCH)/%.o, $(assembly_source_files))
+KERNEL := build/kernel
+KSO := $(KERNEL).so
+EFI := build/BOOTX64.efi
+IMG := $(KERNEL).img
 
-all: $(kernel)
+INC := $(wildcard src/*.h)
+SRC := $(wildcard src/*.c)
+OBJ := $(patsubst src/%.c, build/%.o, $(SRC))
 
-run: $(iso)
-	@qemu-system-x86_64 -cdrom $(iso)
+LIBDIR := /usr/lib
+LIB := -l:libgnuefi.a -l:libefi.a
 
-iso: $(iso)
+EFIINC        = /usr/include/efi
+EFIINCS       = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol
+EFI_CRT_OBJ   = /usr/lib/crt0-efi-$(ARCH).o
+EFI_LDS       = /usr/lib/elf_$(ARCH)_efi.lds
+OVMF          = /usr/share/ovmf/ovmf_code_x64.bin
+QEMU_OPTS     = -enable-kvm -m 64 -device VGA
 
-$(iso): $(kernel) $(grub_cfg)
-	@mkdir -p build/iso/boot/grub
-	@cp $(kernel) build/iso/boot/kernel.bin
-	@cp $(grub_cfg) build/iso/boot/grub
-	@grub-mkrescue -o $(iso) build/iso 2> /dev/null
-	@rm -r build/iso
+CC = gcc
+CFLAGS = -c -fno-stack-protector -fpic -fshort-wchar -mno-red-zone $(EFIINCS) \
+	 -DEFI_FUNCTION_WRAPPER
 
-$(kernel): $(assembly_object_files) $(linker_script)
-	@ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files)
+LD = ld
+LDFLAGS = -nostdlib -znocombreloc -T $(EFI_LDS) -shared -Bsymbolic \
+	  -L $(LIBDIR)
 
-build/arch/$(ARCH)/%.o: src/arch/$(ARCH)/%.asm
-	@mkdir -p $(shell dirname $@)
-	@nasm -felf64 $< -o $@
+all: $(IMG)
+
+run: $(IMG)
+	qemu-system-x86_64 -bios $(OVMF) -usb -usbdevice disk::$<
+
+$(IMG): $(EFI)
+	dd if=/dev/zero of=$@ bs=1k count=1440
+	mformat -i $@ -f 1440 ::
+	mmd -i $@ ::/EFI
+	mmd -i $@ ::/EFI/BOOT
+	mcopy -i $@ $< ::/EFI/BOOT
+
+
+$(EFI): $(KSO)
+	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
+		-j .rela -j .reloc --target=efi-app-x86_64 $< $@
+
+$(KSO): $(OBJ) $(EFI_CRT_OBJ)
+	ld $(LDFLAGS) $^ $(LIB) -o $@
+
+build/%.o: src/%.c
+	mkdir -p $(shell dirname $@)
+	$(CC) $(CFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
