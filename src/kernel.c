@@ -1,26 +1,38 @@
-#include <stddef.h>
-#include <stdbool.h>
-#include <efi.h>
-#include <efilib.h>
+#define IN
+#define EFIAPI
+#define EFI_SUCCESS 0
 
-static CHAR16 *PROMPT = L"? ";
-static UINTN LEN = 1024;
-static CHAR16 *QUIT = L"quit";
+typedef unsigned short CHAR16;
+typedef unsigned long long EFI_STATUS;
+typedef void *EFI_HANDLE;
 
-EFI_STATUS efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
+struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TEXT_STRING) (
+	IN struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL  *This,
+	IN CHAR16                                   *String
+);
+
+typedef struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
+	void             *a;
+	EFI_TEXT_STRING  OutputString;
+} EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
+
+typedef struct {
+	char                             a[52];
+	EFI_HANDLE                       ConsoleOutHandle;
+	EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL  *ConOut;
+} EFI_SYSTEM_TABLE;
+
+EFI_STATUS
+EFIAPI
+EfiMain (
+	IN EFI_HANDLE        ImageHandle,
+	IN EFI_SYSTEM_TABLE  *SystemTable
+)
 {
-	CHAR16 *input;
-
-	InitializeLib(image, systab);
-	InitializeUnicodeSupport("en");
-	input = AllocateZeroPool(LEN * sizeof(CHAR16));
-	while (true) {
-		Input(PROMPT, input, LEN);
-		if (StrCmp(input, QUIT) == 0)
-			break;
-		Output(L"\r\n");
-		Output(input);
-		Output(L"\r\n");
-	}
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Hello World!\n");
+	while(1);
 	return EFI_SUCCESS;
 }

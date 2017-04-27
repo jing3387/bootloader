@@ -1,39 +1,23 @@
 ARCH = x86_64
 
-KERNEL = build/kernel
-KSO = $(KERNEL).so
+DLL = build/schminke.dll
 EFI = build/BOOTX64.efi
-IMG = $(KERNEL).img
-
-INC = $(wildcard src/*.h)
+IMG = build/schminke.img
 SRC = $(wildcard src/*.c)
-OBJ = $(patsubst src/%.c, build/%.o, $(SRC))
 
-LIBDIR = /usr/lib
-LIB = -lefi -lgnuefi
+QEMU_OPTS = -nographic \
+	    -drive if=pflash,format=raw,readonly,file=ovmf_code_x64.bin \
+	    -drive if=pflash,format=raw,file=ovmf_vars_x64.bin
 
-EFIINC = /usr/include/efi
-EFIINCS = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol
-EFI_CRT_OBJ = /usr/lib/crt0-efi-$(ARCH).o
-EFI_LDS = /usr/lib/elf_$(ARCH)_efi.lds
-OVMF = /usr/share/ovmf/ovmf_code_x64.bin
+CC = x86_64-w64-mingw32-gcc
+CFLAGS = -shared -nostdlib -mno-red-zone -fno-stack-protector -Wall \
+         -e EfiMain
+OBJCOPY = x86_64-w64-mingw32-objcopy
 
-QEMU_OPTS = -enable-kvm -m 64 -nographic
-
-CC = clang
-CFLAGS = -c -fno-stack-protector -fpic -fshort-wchar -mno-red-zone $(EFIINCS)
-ifeq ($(ARCH),x86_64)
-	CFLAGS += -DEFI_FUNCTION_WRAPPER
-endif
-
-LD = ld.gold
-LDFLAGS = -nostdlib -znocombreloc -T $(EFI_LDS) -shared -Bsymbolic \
-	  -L $(LIBDIR)
-
-all: $(IMG)
+all: $(EFI)
 
 run: $(IMG)
-	qemu-system-$(ARCH) $(QEMU_OPTS) -bios $(OVMF) -usb -usbdevice disk::$<
+	qemu-system-$(ARCH) $(QEMU_OPTS) -usb -usbdevice disk::$<
 
 $(IMG): $(EFI)
 	dd if=/dev/zero of=$@ bs=1k count=1440
@@ -42,16 +26,12 @@ $(IMG): $(EFI)
 	mmd -i $@ ::/EFI/BOOT
 	mcopy -i $@ $< ::/EFI/BOOT
 
-$(EFI): $(KSO)
-	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
-		-j .rela -j .reloc -j .eh_frame --target=efi-app-$(ARCH) $< $@
+$(EFI): $(DLL)
+	$(OBJCOPY) --target=efi-app-$(ARCH) $< $@
 
-$(KSO): $(OBJ) $(EFI_CRT_OBJ)
-	$(LD) $(LDFLAGS) $^ $(LIB) -o $@
-
-build/%.o: src/%.c
+$(DLL): $(SRC)
 	mkdir -p $(shell dirname $@)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
 clean:
