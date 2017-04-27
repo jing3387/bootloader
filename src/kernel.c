@@ -1,27 +1,26 @@
+#include <stddef.h>
+#include <stdbool.h>
 #include <efi.h>
 #include <efilib.h>
 
-EFI_STATUS
-efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
+static CHAR16 *PROMPT = L"? ";
+static UINTN LEN = 1024;
+static CHAR16 *QUIT = L"quit";
+
+EFI_STATUS efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
-	EFI_LOADED_IMAGE *loaded_image = NULL;
-	EFI_GUID loaded_image_protocol = LOADED_IMAGE_PROTOCOL;
-	EFI_STATUS status;
+	CHAR16 *input;
 
 	InitializeLib(image, systab);
-	status = uefi_call_wrapper(
-		systab->BootServices->HandleProtocol,
-		3,
-		image,
-		&loaded_image_protocol,
-		(void **) &loaded_image
-	);
-	if (EFI_ERROR(status)) {
-		Print(L"handleprotocol: %r\n", status);
+	InitializeUnicodeSupport("en");
+	input = AllocateZeroPool(LEN * sizeof(CHAR16));
+	while (true) {
+		Input(PROMPT, input, LEN);
+		if (StrCmp(input, QUIT) == 0)
+			break;
+		Output(L"\r\n");
+		Output(input);
+		Output(L"\r\n");
 	}
-
-	Print(L"Image base: %lx\n", loaded_image->ImageBase);
-	Print(L"Image size: %lx\n", loaded_image->ImageSize);
-	Print(L"Image file: %s\n", DevicePathToStr(loaded_image->FilePath));
-	for (;;) __asm__("hlt");
+	return EFI_SUCCESS;
 }
