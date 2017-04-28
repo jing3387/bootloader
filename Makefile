@@ -1,37 +1,28 @@
 ARCH = x86_64
 
-DLL = build/schminke.dll
-EFI = build/BOOTX64.efi
 IMG = build/schminke.img
+EFI = build/BOOTX64.efi
+DLL = build/schminke.dll
 SRC = $(wildcard src/*.c)
 
-QEMU_OPTS = -nographic \
-	    -drive if=pflash,format=raw,readonly,file=ovmf_code_x64.bin \
-	    -drive if=pflash,format=raw,file=ovmf_vars_x64.bin
+prefix=x86_64-w64-mingw32-
+CC = $(prefix)gcc
+OBJCOPY = $(prefix)objcopy
 
-CC = x86_64-w64-mingw32-gcc
-CFLAGS = -shared -nostdlib -mno-red-zone -fno-stack-protector -Wall \
-         -e EfiMain
-OBJCOPY = x86_64-w64-mingw32-objcopy
+EDK2 = edk2/MdePkg/Include
+INCDIR = inc
+INC = -I$(INCDIR) -I$(EDK2) -I$(EDK2)/X64
+CFLAGS = -mno-red-zone -fno-stack-protector -Wall $(INC)
+LDFLAGS = -shared -nostdlib -Wl,--subsystem,10 -e efi_main
 
 all: $(EFI)
-
-run: $(IMG)
-	qemu-system-$(ARCH) $(QEMU_OPTS) -usb -usbdevice disk::$<
-
-$(IMG): $(EFI)
-	dd if=/dev/zero of=$@ bs=1k count=1440
-	mformat -i $@ -f 1440 ::
-	mmd -i $@ ::/EFI
-	mmd -i $@ ::/EFI/BOOT
-	mcopy -i $@ $< ::/EFI/BOOT
 
 $(EFI): $(DLL)
 	$(OBJCOPY) --target=efi-app-$(ARCH) $< $@
 
 $(DLL): $(SRC)
 	mkdir -p $(shell dirname $@)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIB)
 
 .PHONY: clean
 clean:
