@@ -23,17 +23,17 @@ unikernel featuring the Schminke language (a derivate of Scheme) and a single
 * `make iso` to build a FAT image of the EFI and then create an ISO.
 
 ### Creating a bootable USB
-Simply format your USB to be FAT32 and have the following structure:
+Simply format your USB to be FAT32 with a GPT and have the following structure:
 
 ```
 .
 └── EFI
     └── BOOT
-            └── BOOTX64.EFI
+        └── BOOTX64.EFI
 ```
 
 That is, create the directory `/EFI/BOOT` and place the result of `make`,
-namely `BOOTX64.EFI`, in the `/EFI/BOOT` directory
+namely `build/BOOTX64.EFI`, in the `/EFI/BOOT` directory
 
 #### Macintosh
 To use the bootable USB on a Macintosh you'll first have to install
