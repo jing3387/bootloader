@@ -10,9 +10,10 @@ prefix=x86_64-w64-mingw32-
 CC = $(prefix)gcc
 OBJCOPY = $(prefix)objcopy
 
-EDK2 = edk2/MdePkg/Include
 INCDIR = inc
+EDK2 = $(INCDIR)/edk2/MdePkg/Include
 INC = -I$(INCDIR) -I$(EDK2) -I$(EDK2)/X64
+
 CFLAGS = -mno-red-zone -fno-stack-protector -Wall $(INC)
 LDFLAGS = -shared -nostdlib -Wl,--subsystem,10 -e efi_main
 
@@ -26,16 +27,14 @@ all: $(EFI)
 
 iso: $(ISO)
 
-run: $(EFI) $(OVMF_VARS)
-	mkdir -p build/EFI/BOOT
-	cp $(EFI) build/EFI/BOOT
-	qemu-system-$(ARCH) $(QEMU_OPTS) -hda fat:rw:build
+run: $(ISO) $(OVMF_VARS)
+	qemu-system-$(ARCH) $(QEMU_OPTS) -cdrom $(ISO)
 
 $(ISO): $(IMG)
-	mkdir -p iso
-	cp $< iso
+	mkdir -p build/iso
+	cp $< build/iso
 	xorriso -as mkisofs -R -f -e $(shell basename $<) -no-emul-boot \
-		-o $@ iso
+		-o $@ build/iso
 
 $(IMG): $(EFI)
 	dd if=/dev/zero of=$@ bs=1k count=1440
@@ -56,4 +55,4 @@ $(DLL): $(SRC)
 
 .PHONY: clean
 clean:
-	@rm -rf build iso
+	@rm -rf build
