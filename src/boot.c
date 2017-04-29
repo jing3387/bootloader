@@ -1,14 +1,15 @@
-#include "Uefi.h"
-#include "Protocol/GraphicsOutput.h"
-#include "kernel.h"
+#include "boot.h"
 
-EFI_STATUS get_graphics(EFI_SYSTEM_TABLE *st, EFI_GRAPHICS_OUTPUT_PROTOCOL **gops, UINTN *ngop)
-{
+EFI_STATUS get_graphics(
+	EFI_SYSTEM_TABLE *st,
+	EFI_GRAPHICS_OUTPUT_PROTOCOL **gops,
+	UINTN *ngop
+) {
 	EFI_STATUS status;
 	UINTN id;
 	EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-	UINTN handle_count;
-	EFI_HANDLE *handle_buffer = NULL;
+	UINTN nhandle;
+	EFI_HANDLE *handles = NULL;
 	UINTN i;
 	EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info;
 	UINTN infosz;
@@ -17,8 +18,8 @@ EFI_STATUS get_graphics(EFI_SYSTEM_TABLE *st, EFI_GRAPHICS_OUTPUT_PROTOCOL **gop
 		ByProtocol,
 		&gop_guid,
 		NULL,
-		&handle_count,
-		&handle_buffer
+		&nhandle,
+		&handles
 	);
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
@@ -29,12 +30,12 @@ EFI_STATUS get_graphics(EFI_SYSTEM_TABLE *st, EFI_GRAPHICS_OUTPUT_PROTOCOL **gop
 	}
 	status = st->BootServices->AllocatePool(
 		EfiLoaderData,
-		sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL) * handle_count,
+		sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL) * nhandle,
 		(void **)gops
 	);
-	for (i = 0; i < handle_count; i++) {
+	for (i = 0; i < nhandle; i++) {
 		status = st->BootServices->HandleProtocol(
-			handle_buffer[i],
+			handles[i],
 			&gop_guid,
 			(void **)&gops[i]
 		);
@@ -114,7 +115,7 @@ EFI_STATUS mmap_realloc(EFI_SYSTEM_TABLE *st, void **buf, UINTN bufsz)
 	return status;
 }
 
-EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct memory_map *mm)
+EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct efi_memory_map *mm)
 {
 	EFI_STATUS status;
 	EFI_MEMORY_DESCRIPTOR *buf;
@@ -158,47 +159,27 @@ EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct memory_map *mm)
 	return status;
 }
 
-void set_pixel(EFI_GRAPHICS_OUTPUT_PROTOCOL *gop, UINT32 w, UINT32 h, UINT32 rgb)
-{
-    UINT32 *addr = (UINT32 *)gop->Mode->FrameBufferBase + w + h * gop->Mode->Info->PixelsPerScanLine;
-    *addr = rgb;
-}
-
-void fill_screen(EFI_GRAPHICS_OUTPUT_PROTOCOL *gop, UINT32 rgb)
-{
-    rgb |= 0xff000000;
-    for(int x = 0; x < gop->Mode->Info->HorizontalResolution; x += 1) {
-        for(int y = 0; y < gop->Mode->Info->VerticalResolution; y += 1) {
-            set_pixel(gop, x, y, rgb);
-        }
-    }
-}
-
+void kernel_main(struct efi) __attribute__((noreturn));
 
 EFI_STATUS efi_main(EFI_HANDLE ih, EFI_SYSTEM_TABLE *st)
 {
-	UINTN i;
 	EFI_STATUS status;
-	UINTN ngop;
-	EFI_GRAPHICS_OUTPUT_PROTOCOL *gops;
-	struct memory_map mmap;
+	struct efi efi;
 
-	st->ConOut->OutputString(st->ConOut, L"Getting graphics.\n\r");
-	status = get_graphics(st, &gops, &ngop);
+	status = get_graphics(st, &efi.graphics.gops, &efi.graphics.ngop);
 	if (EFI_ERROR(status))
 		return status;
-	st->ConOut->OutputString(st->ConOut, L"Got graphics.\n\r");
-	st->ConOut->OutputString(st->ConOut, L"Getting memory map.\n\r");
-	status = get_memory_map(st, &mmap);
+	status = get_memory_map(st, &efi.memmap);
 	if (EFI_ERROR(status))
 		return status;
 	// We've got the memory map, don't call any other UEFI services!
-	status = st->BootServices->ExitBootServices(ih, mmap.map_key);
+	status = st->BootServices->ExitBootServices(ih, efi.memmap.map_key);
 	if (EFI_ERROR(status)) {
-		st->ConOut->OutputString(st->ConOut, L"Error exiting boot services.\n\r");
+		st->ConOut->OutputString(
+			st->ConOut,
+			L"Error exiting boot services.\n\r"
+		);
 		return status;
 	}
-	for (i = 0; i < ngop; i++)
-		fill_screen(gops + i, 0xff0000);
-	return status;
+	kernel_main(efi);
 }

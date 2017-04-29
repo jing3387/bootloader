@@ -6,6 +6,8 @@ EFI = build/BOOTX64.efi
 DLL = build/schminke.dll
 SRC = $(wildcard src/*.c)
 
+SYSROOT = sysroot
+
 prefix=x86_64-w64-mingw32-
 CC = $(prefix)gcc
 OBJCOPY = $(prefix)objcopy
@@ -27,8 +29,8 @@ all: $(EFI)
 
 iso: $(ISO)
 
-run: $(ISO) $(OVMF_VARS)
-	qemu-system-$(ARCH) $(QEMU_OPTS) -cdrom $(ISO)
+run: $(SYSROOT) $(OVMF_VARS)
+	qemu-system-$(ARCH) $(QEMU_OPTS) -hda fat:rw:$(SYSROOT)
 
 $(ISO): $(IMG)
 	mkdir -p build/iso
@@ -46,6 +48,10 @@ $(IMG): $(EFI)
 $(OVMF_VARS):
 	cp /usr/share/ovmf/ovmf_vars_x64.bin $@
 
+$(SYSROOT): $(EFI)
+	mkdir -p $@/EFI/BOOT
+	cp $(EFI) $@/EFI/BOOT
+
 $(EFI): $(DLL)
 	$(OBJCOPY) --target=efi-app-$(ARCH) $< $@
 
@@ -55,4 +61,4 @@ $(DLL): $(SRC)
 
 .PHONY: clean
 clean:
-	@rm -rf build
+	rm -rf build sysroot
