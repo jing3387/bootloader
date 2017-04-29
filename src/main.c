@@ -34,12 +34,9 @@ EFI_STATUS efi_main(EFI_HANDLE ih, EFI_SYSTEM_TABLE *st)
 	st->ConOut->OutputString(st->ConOut, L"Got graphics.\n\r");
 	st->ConOut->OutputString(st->ConOut, L"Getting memory map.\n\r");
 	status = get_memory_map(st, &mmap);
-	if (EFI_ERROR(status)) {
-		st->ConOut->OutputString(st->ConOut, L"Error getting memory map.\n\r");
+	if (EFI_ERROR(status))
 		return status;
-	}
-	st->ConOut->OutputString(st->ConOut, L"Got memory map.\n\r");
-	st->ConOut->OutputString(st->ConOut, L"Exiting boot services.\n\r");
+	// We've got the memory map, don't call any other UEFI services!
 	status = st->BootServices->ExitBootServices(ih, mmap.map_key);
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(st->ConOut, L"Error exiting boot services.\n\r");
