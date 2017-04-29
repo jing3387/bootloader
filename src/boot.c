@@ -1,7 +1,84 @@
 #include "Uefi.h"
+#include "Protocol/GraphicsOutput.h"
 #include "boot.h"
 
-EFI_STATUS realloc_buffer(EFI_SYSTEM_TABLE *st, void **buf, UINTN bufsz)
+EFI_STATUS get_graphics(EFI_SYSTEM_TABLE *st, EFI_GRAPHICS_OUTPUT_PROTOCOL **gops, UINTN *ngop)
+{
+	EFI_STATUS status;
+	UINTN id;
+	EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+	UINTN handle_count;
+	EFI_HANDLE *handle_buffer = NULL;
+	UINTN i;
+	EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info;
+	UINTN infosz;
+
+	status = st->BootServices->LocateHandleBuffer(
+		ByProtocol,
+		&gop_guid,
+		NULL,
+		&handle_count,
+		&handle_buffer
+	);
+	if (EFI_ERROR(status)) {
+		st->ConOut->OutputString(
+			st->ConOut,
+			L"Error locating graphics output protocol.\n\r"
+		);
+		return status;
+	}
+	status = st->BootServices->AllocatePool(
+		EfiLoaderData,
+		sizeof(EFI_GRAPHICS_OUTPUT_PROTOCOL) * handle_count,
+		(void **)gops
+	);
+	for (i = 0; i < handle_count; i++) {
+		status = st->BootServices->HandleProtocol(
+			handle_buffer[i],
+			&gop_guid,
+			(void **)&gops[i]
+		);
+		if (EFI_ERROR(status)) {
+			st->ConOut->OutputString(
+				st->ConOut,
+				L"Error handling graphics output protocol.\n\r"
+			);
+			continue;
+		}
+		for (id = 0; id < gops[i]->Mode->MaxMode; id++) {
+			status = gops[i]->QueryMode(gops[i], id, &infosz, &info);
+			if (EFI_ERROR(status)) {
+				st->ConOut->OutputString(
+					st->ConOut,
+					L"Couldn't query graphics mode.\n\r"
+				);
+				return status;
+			}
+			status = gops[i]->SetMode(gops[i], id);
+			if (status == EFI_UNSUPPORTED) {
+				continue;
+			} else if (EFI_ERROR(status)) {
+				st->ConOut->OutputString(
+					st->ConOut,
+					L"Failed to set graphics mode.\n\r"
+				);
+				return status;
+			} else {
+				break;
+			}
+		}
+	}
+	if (EFI_ERROR(status)) {
+		st->ConOut->OutputString(
+			st->ConOut,
+			L"Error finding desired graphics mode.\n\r"
+		);
+		return status;
+	}
+	return status;
+}
+
+EFI_STATUS efi_realloc(EFI_SYSTEM_TABLE *st, void **buf, UINTN bufsz)
 {
 	EFI_STATUS status;
 
@@ -31,7 +108,7 @@ EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct memory_map *mm)
 	UINTN bufsz;
 
 	do {
-		status = realloc_buffer(st, (void **)&buf, bufsz);
+		status = efi_realloc(st, (void **)&buf, bufsz);
 		if (EFI_ERROR(status))
 			return status;
 		status = st->BootServices->GetMemoryMap(

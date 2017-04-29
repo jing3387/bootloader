@@ -6,4 +6,5 @@ struct memory_map {
 	UINT32 descriptor_version;
 };
 
+EFI_STATUS get_graphics(EFI_SYSTEM_TABLE *, EFI_GRAPHICS_OUTPUT_PROTOCOL **, UINTN *);
 EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *, struct memory_map *);
