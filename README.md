@@ -5,10 +5,22 @@ unikernel featuring the Schminke language (a derivate of Scheme) and a single
 64-bit address space. Currently Schminke only builds for x86_64.
 
 ## Dependencies
+
+### Building the EFI
 * `mingw-w64`
 
+### Running on QEMU
+* `qemu`
+* `ovmf`
+
+### Creating an ISO
+* `mtools`
+* `libisoburn`
+
 ## Building
-Run `make` to build the image that can be run off a USB.
+* `make` to build the EFI that can be run off a USB.
+* `make run` to build the EFI image and then run it with QEMU.
+* `make iso` to build a FAT image of the EFI and then create an ISO.
 
 ### Creating a bootable USB
 Simply format your USB to be FAT32 and have the following structure:
