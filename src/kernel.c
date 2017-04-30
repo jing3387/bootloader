@@ -5,7 +5,5 @@
 
 void kernel_main(struct efi efi)
 {
-	print(
-		efi.graphics, L"ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz (){}[]<>$*-+=/#_%^@\\&|~?'\"!,.;:"
-	);
+	putc(efi.graphics, 1, 1, u'μ');
 }

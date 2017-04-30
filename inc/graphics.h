@@ -1,5 +1,5 @@
-#define BKGND_COLOR 0xFFFFFFEA
-#define FRGND_COLOR 0xFF000000
+#define WHITE 0xFFFFFFFF
+#define BLACK 0xFF000000
 
-void print(struct efi_graphics, CHAR16 *);
+void putc(struct efi_graphics, UINT32, UINT32, CHAR16);
 void clear(struct efi_graphics);

@@ -6,7 +6,8 @@ EFI_STATUS get_graphics(
 	EFI_SYSTEM_TABLE *st,
 	EFI_GRAPHICS_OUTPUT_PROTOCOL **gops,
 	UINTN *ngop
-) {
+)
+{
 	EFI_STATUS status;
 	UINTN id;
 	EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
@@ -26,7 +27,7 @@ EFI_STATUS get_graphics(
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error locating graphics output protocol.\n\r"
+			u"Error locating graphics output protocol.\n\r"
 		);
 		return status;
 	}
@@ -44,7 +45,7 @@ EFI_STATUS get_graphics(
 		if (EFI_ERROR(status)) {
 			st->ConOut->OutputString(
 				st->ConOut,
-				L"Error handling graphics output protocol.\n\r"
+				u"Error handling graphics output protocol.\n\r"
 			);
 			continue;
 		}
@@ -55,7 +56,7 @@ EFI_STATUS get_graphics(
 			if (EFI_ERROR(status)) {
 				st->ConOut->OutputString(
 					st->ConOut,
-					L"Couldn't query graphics mode.\n\r"
+					u"Couldn't query graphics mode.\n\r"
 				);
 				return status;
 			}
@@ -65,7 +66,7 @@ EFI_STATUS get_graphics(
 			} else if (EFI_ERROR(status)) {
 				st->ConOut->OutputString(
 					st->ConOut,
-					L"Failed to set graphics mode.\n\r"
+					u"Failed to set graphics mode.\n\r"
 				);
 				return status;
 			} else {
@@ -76,7 +77,7 @@ EFI_STATUS get_graphics(
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error finding desired graphics mode.\n\r"
+			u"Error finding desired graphics mode.\n\r"
 		);
 		return status;
 	}
@@ -94,7 +95,7 @@ EFI_STATUS mmap_realloc(EFI_SYSTEM_TABLE *st, void **buf, UINTN bufsz)
 		if (EFI_ERROR(status)) {
 			st->ConOut->OutputString(
 				st->ConOut,
-				L"Error freeing memory map buffer.\n\r"
+				u"Error freeing memory map buffer.\n\r"
 			);
 			return status;
 		}
@@ -108,7 +109,7 @@ EFI_STATUS mmap_realloc(EFI_SYSTEM_TABLE *st, void **buf, UINTN bufsz)
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error allocating memory map buffer.\n\r"
+			u"Error allocating memory map buffer.\n\r"
 		);
 		st->BootServices->FreePool(*buf);
 		*buf = NULL;
@@ -131,7 +132,7 @@ EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct efi_memory_map *mm)
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error initially allocating memory map buffer.\n\r"
+			u"Error initially allocating memory map buffer.\n\r"
 		);
 		return status;
 	}
@@ -152,7 +153,7 @@ EFI_STATUS get_memory_map(EFI_SYSTEM_TABLE *st, struct efi_memory_map *mm)
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error getting memory map.\n\r"
+			u"Error getting memory map.\n\r"
 		);
 		return status;
 	}
@@ -174,12 +175,11 @@ EFI_STATUS efi_main(EFI_HANDLE ih, EFI_SYSTEM_TABLE *st)
 	status = get_memory_map(st, &efi.memmap);
 	if (EFI_ERROR(status))
 		return status;
-	// We've got the memory map, don't call any other UEFI services!
 	status = st->BootServices->ExitBootServices(ih, efi.memmap.map_key);
 	if (EFI_ERROR(status)) {
 		st->ConOut->OutputString(
 			st->ConOut,
-			L"Error exiting boot services.\n\r"
+			u"Error exiting boot services.\n\r"
 		);
 		return status;
 	}
