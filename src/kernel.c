@@ -5,5 +5,5 @@
 
 void kernel_main(struct efi efi)
 {
-	print(efi.graphics, "Hello, Jaek!");
+	print(efi.graphics, L"Hello, World!");
 }
