@@ -2,7 +2,7 @@
 #include "Protocol/GraphicsOutput.h"
 #include "boot.h"
 #include "graphics.h"
-#include "terminus.h"
+#include "gohu.h"
 
 void clear(struct efi_graphics gs)
 {
@@ -42,16 +42,11 @@ void print(struct efi_graphics gs, CHAR16 *input)
 					break;
 			}
 			ch = at;
-			bitmap = (UINT8 *)&font.Bitmap[idx * font.Height * 2];
-			for (j = 0; j < font.Height * 2; j += 2) {
+			bitmap = (UINT8 *)&font.Bitmap[idx * font.Height];
+			for (j = 0; j < font.Height; j++) {
 				for (k = 0; k < 8; k++) {
 					set = bitmap[j] & 1 << (7 - k);
 					ch[k] = set ? FRGND_COLOR :
-						BKGND_COLOR;
-				}
-				for (k = 0; k < font.Width - 8; k++) {
-					set = bitmap[j + 1] & 1 << (7 - k);
-					ch[k + 8] = set ? FRGND_COLOR :
 						BKGND_COLOR;
 				}
 				ch += pitch;

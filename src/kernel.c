@@ -5,5 +5,7 @@
 
 void kernel_main(struct efi efi)
 {
-	print(efi.graphics, L"Hello, World!");
+	print(
+		efi.graphics, L"ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 abcdefghijklmnopqrstuvwxyz (){}[]<>$*-+=/#_%^@\\&|~?'\"!,.;:"
+	);
 }
