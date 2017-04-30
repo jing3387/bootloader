@@ -1,8 +1,3 @@
-#pragma once
-
-#include "Uefi.h"
-#include "Protocol/GraphicsOutput.h"
-
 struct efi_memory_map {
 	UINTN memory_map_size;
 	EFI_MEMORY_DESCRIPTOR *memory_map;

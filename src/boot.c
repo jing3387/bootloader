@@ -1,3 +1,5 @@
+#include "Uefi.h"
+#include "Protocol/GraphicsOutput.h"
 #include "boot.h"
 
 EFI_STATUS get_graphics(
