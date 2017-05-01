@@ -1,3 +1,11 @@
+#pragma once
+
+#include <stddef.h>
+#undef NULL
+#include "Uefi.h"
+#include "Protocol/GraphicsOutput.h"
+#include "vga.h"
+
 struct efi_memory_map {
 	UINTN memory_map_size;
 	EFI_MEMORY_DESCRIPTOR *memory_map;
@@ -6,12 +14,12 @@ struct efi_memory_map {
 	UINT32 descriptor_version;
 };
 
-struct efi_graphics {
-	EFI_GRAPHICS_OUTPUT_PROTOCOL *gops;
-	UINTN ngop;
+struct graphics {
+	struct vga *vgas;
+	size_t nvga;
 };
 
-struct efi {
+struct boot {
 	struct efi_memory_map memmap;
-	struct efi_graphics graphics;
+	struct graphics graphics;
 };

@@ -1,3 +1,7 @@
+#pragma once
+
+extern const struct bitmap_font font;
+
 // (c) 2009, 2010 Lutz Sammer, License: AGPLv3
 
 	/// bitmap font structure

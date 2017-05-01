@@ -1,6 +1,3 @@
-// Created from bdf2c Version 3, (c) 2009, 2010 by Lutz Sammer
-//	License AGPLv3: GNU Affero General Public License version 3
-
 #include "font.h"
 
 	/// character bitmap for each encoding
@@ -15305,4 +15302,3 @@ const struct bitmap_font font = {
 	.Index = __font_index__,
 	.Bitmap = __font_bitmap__,
 };
-
