@@ -41,11 +41,11 @@ void term_clear(void)
 	}
 }
 
-void term_putc(uint32_t c)
+void term_putchar(unsigned short c)
 {
 	uint8_t set, *bitmap;
-	uint32_t *at, pitch, x, y;
-	size_t idx, i, j, k;
+	uint32_t *at;
+	size_t idx, i, j, k, x, y;
 	struct vga *vga;
 
 	if (c == '\n') {
@@ -61,8 +61,7 @@ void term_putc(uint32_t c)
 		}
 		bitmap = (uint8_t *)&font.Bitmap[idx * font.Height];
 		vga = &term_vgas[i];
-		pitch = vga->pitch;
-		y = term_row * font.Height * pitch;
+		y = term_row * font.Height * vga->pitch;
 		x = term_col * font.Width;
 		at = (uint32_t *)vga->mem + y + x;
 		for (j = 0; j < font.Height; j++) {
@@ -70,13 +69,13 @@ void term_putc(uint32_t c)
 				set = bitmap[j] & 1 << (7 - k);
 				at[k] = set ? term_frgnd : term_bkgnd;
 			}
-			at += pitch;
+			at += vga->pitch;
 		}
 	}
-	// TODO: scrolling.
-	term_col++;
-	if (term_col > TERM_WIDTH) {
-		term_row++;
+	// TODO: scrolling
+	if (++term_col == TERM_WIDTH) {
 		term_col = 0;
+		if (++term_row == TERM_HEIGHT)
+			term_row = 0;
 	}
 }

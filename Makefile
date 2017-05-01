@@ -16,8 +16,8 @@ INCDIR = inc
 EDK2 = $(INCDIR)/edk2/MdePkg/Include
 INC = -I$(INCDIR) -I$(EDK2) -I$(EDK2)/X64
 
-CFLAGS = -std=gnu11 -mno-red-zone -fno-stack-protector -Wall $(INC)
-LDFLAGS = -shared -nostdlib -fno-builtin -Wl,--subsystem,10 -e efi_main
+CFLAGS = -std=gnu11 -mno-red-zone -fno-stack-protector -Wall -Wextra $(INC)
+LDFLAGS = -shared -nostdlib -Wl,--subsystem,10 -e efi_main
 
 OVMF_CODE = /usr/share/ovmf/ovmf_code_x64.bin
 OVMF_VARS = build/ovmf_vars_x64.bin
